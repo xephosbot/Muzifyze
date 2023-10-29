@@ -8,6 +8,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,7 +20,6 @@ import androidx.navigation.compose.rememberNavController
 import com.xbot.musifyze.R
 import com.xbot.musifyze.ui.components.BottomSheetScaffold
 import com.xbot.musifyze.ui.components.IconButton
-import com.xbot.musifyze.ui.components.TopAppBar
 import com.xbot.musifyze.ui.components.pinnedScrollBehavior
 import com.xbot.musifyze.ui.components.rememberBottomSheetScaffoldState
 import com.xbot.musifyze.ui.features.player.MusicPlayerBottomSheet
@@ -47,21 +47,31 @@ private fun MusifyzeAppContent(
         scaffoldState = scaffoldState,
         sheetContent = {
             MusicPlayerBottomSheet(
-                state = scaffoldState.bottomSheetState
+                bottomSheetState = scaffoldState.bottomSheetState
             )
         },
         sheetPeekHeight = MusicPlayerMinHeight,
         topBar = {
-            TopAppBar(
+            NavigationTopAppBar(
+                navController = navController,
                 title = {
-                    Text(text = stringResource(id = R.string.app_name))
+                    Text(text = it ?: stringResource(id = R.string.app_name))
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /*TODO*/ }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Account"
-                        )
+                    if (it) {
+                        IconButton(onClick = { /*TODO*/ }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Account"
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { navController.navigateUp() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -81,7 +91,7 @@ private fun MusifyzeAppContent(
                     .graphicsLayer {
                         translationY = it
                     },
-                destinations = DefaultDestinations,
+                destinations = TopLevelDestinations,
                 navController = navController
             )
         },
@@ -97,7 +107,7 @@ private fun MusifyzeAppContent(
         NavigationGraph(
             modifier = Modifier.padding(contentPadding),
             navController = navController,
-            startDestination = BottomNavItem.Radio.route
+            startDestination = NavigationItem.Home.route
         )
     }
 }

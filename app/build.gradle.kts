@@ -58,6 +58,7 @@ android {
 dependencies {
 
     implementation(libs.core.ktx)
+    implementation(libs.coroutines.guava)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.activity.compose)
@@ -72,6 +73,8 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.palette)
     implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
+    implementation(libs.coil)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)

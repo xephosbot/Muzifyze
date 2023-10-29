@@ -51,35 +51,76 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import com.xbot.musifyze.R
 import com.xbot.musifyze.ui.components.BottomSheetState
 import com.xbot.musifyze.ui.components.IconButton
 import com.xbot.musifyze.ui.components.Slider
 import com.xbot.musifyze.ui.components.TopAppBar
 import com.xbot.musifyze.ui.theme.DynamicTheme
+import com.xbot.musifyze.ui.utils.LocalMediaComponent
+import com.xbot.musifyze.ui.utils.rememberMediaPlayback
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MusicPlayerBottomSheet(
     modifier: Modifier = Modifier,
-    state: BottomSheetState
+    bottomSheetState: BottomSheetState
+) {
+    MusicPlayerScreen(
+        modifier = modifier,
+        bottomSheetState = bottomSheetState
+    )
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun MusicPlayerScreen(
+    modifier: Modifier = Modifier,
+    bottomSheetState: BottomSheetState
 ) {
     val scope = rememberCoroutineScope()
+    val controller = LocalMediaComponent.current.controller
+    val mediaPlayback = rememberMediaPlayback()
 
     Box(modifier = modifier.fillMaxSize()) {
         DynamicTheme(R.drawable.album_cover04) {
             MusicPlayerContent(
-                albumTitle = "PVL IS BACK",
+                albumTitle = mediaPlayback.state.current?.artist ?: "Nothing",
                 onCollapse = {
-                    scope.launch { state.collapse() }
+                    scope.launch { bottomSheetState.collapse() }
                 }
             )
         }
-        if (state.progress > 0f) {
+        if (bottomSheetState.progress > 0f) {
             MusicPlayerAppbar(
-                state = state,
-                title = "PVL IS BACK - Gasoline"
+                state = bottomSheetState,
+                title = "${mediaPlayback.state.current?.artist ?: "Noting"} - ${mediaPlayback.state.current?.title ?: "Noting"}",
+                onFavorite = {
+                    controller?.let {
+                        it.setMediaItem(
+                            MediaItem.Builder()
+                                .setUri("https://storage.googleapis.com/uamp/The_Kyoto_Connection_-_Wake_Up/01_-_Intro_-_The_Way_Of_Waking_Up_feat_Alan_Watts.mp3")
+                                .setMediaId("id")
+                                .setMediaMetadata(
+                                    MediaMetadata.Builder()
+                                        .setTitle("Warriors")
+                                        .setArtist("2WEI feat. Edda Hayes")
+                                        .setArtworkUri("https://i1.sndcdn.com/artworks-000665530534-bimvrw-t500x500.jpg".toUri())
+                                        .build()
+                                )
+                                .build()
+                        )
+                        it.prepare()
+                        it.play()
+                    }
+                },
+                onPause = {
+                    //onEvent(MusicPlayerEvent.Play)
+                }
             )
         }
     }

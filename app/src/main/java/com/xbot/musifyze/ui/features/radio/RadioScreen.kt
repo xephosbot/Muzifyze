@@ -1,39 +1,47 @@
 package com.xbot.musifyze.ui.features.radio
 
+import android.graphics.BitmapShader
+import android.graphics.Shader
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.xbot.musifyze.ui.components.drawShader
 import org.intellij.lang.annotations.Language
 
 @Composable
 fun RadioScreenRoute(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    //viewModel: RadioViewModel = hiltViewModel()
 ) {
-    RadioScreenContent(modifier = modifier)
+    /*val state by viewModel.state.collectAsStateWithLifecycle()
+
+    RadioScreenContent(
+        modifier = modifier,
+        state = state
+    )*/
 }
 
 @Composable
 private fun RadioScreenContent(
     modifier: Modifier = Modifier,
+    state: RadioScreenState
 ) {
     RadioShaderSurface(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        fft = state.fft,
+        waveform = state.waveform
     ) {
-        Box(
+        /*Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
@@ -45,13 +53,15 @@ private fun RadioScreenContent(
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
+        }*/
     }
 }
 
 @Composable
 private fun RadioShaderSurface(
     modifier: Modifier = Modifier,
+    fft: ByteArray,
+    waveform: ByteArray,
     colorSurface: Color = MaterialTheme.colors.surface,
     colorPrimary: Color = MaterialTheme.colors.primaryVariant,
     content: @Composable () -> Unit
@@ -66,6 +76,13 @@ private fun RadioShaderSurface(
 
     val radius = with(LocalDensity.current) { DefaultRadius.toPx() }
 
+    val audioVisualizerState = rememberAudioVisualizerState()
+    audioVisualizerState.UpdateBitmap(fft = fft, waveform = waveform)
+
+    val shader = remember(audioVisualizerState) {
+        BitmapShader(audioVisualizerState.bitmap, Shader.TileMode.DECAL, Shader.TileMode.DECAL)
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -75,6 +92,7 @@ private fun RadioShaderSurface(
                 setFloatUniform("iResolution", size.width, size.height)
                 setFloatUniform("iRadius", radius)
                 setFloatUniform("iTime", time)
+                setInputBuffer("iChannel0", shader)
             },
         content = { content() }
     )
@@ -87,6 +105,8 @@ private val FRAGMENT_SHADER = """
     uniform float2 iResolution;
     uniform float iRadius;
     uniform float iTime;
+    
+    uniform shader iChannel0;
     
     // Frequency values for different layers
     float frequencies[16];
@@ -125,7 +145,22 @@ private val FRAGMENT_SHADER = """
     }
     
     half4 main(in float2 fragCoord) { 
-        float2 uv = (fragCoord * 2.0 - iResolution.xy) / iResolution.y;
+        float2 uv = fragCoord.xy / iResolution.xy;
+        
+        int tx = int(uv.x * 512.0);
+        
+        float fft = iChannel0.eval(vec2(tx, 1)).x; 
+        
+        float wave = iChannel0.eval(vec2(tx, 0)).x;
+        
+        // convert frequency to colors
+        vec3 col = vec3(fft, 4.0 * fft * (1.0 - fft), 1.0 - fft) * fft;
+        
+        // add wave form on top	
+        col += 1.0 - smoothstep(0.0, 0.15, abs(wave - uv.y));
+        
+        return vec4(col, 1.0);
+        /*float2 uv = (fragCoord * 2.0 - iResolution.xy) / iResolution.y;
         uv /= (iRadius / iResolution.y);
       
         float2x2 rotate = rotate2d(iTime);
@@ -133,7 +168,8 @@ private val FRAGMENT_SHADER = """
         float color = 0.0;
         
         for (int i = 0; i < 16; i++) {
-            frequencies[i] = sin(iTime * (float(i) / 10000.0) + float(i) * 0.1234) * 0.25;
+            frequencies[i] = clamp(1.75 * pow(iChannel0.eval(vec2(0.05 + 0.5 * float(i) / 16.0, 1.0)).r, 4.0), 0.0, 1.0);
+            //frequencies[i] = sin(iTime * (float(i) / 10000.0) + float(i) * 0.1234) * 0.25;
             
             float wave = sqrt(sin((-(frequencies[i] * noise * PI) + ((uv.x * uv.x) + (uv.y * uv.y)))));
             wave = smoothstep(0.8, 1.0, wave);
@@ -142,7 +178,7 @@ private val FRAGMENT_SHADER = """
             color += wave * 0.2;
         }
       
-        return mix(iColorSurface, iColorPrimary, color);
+        return mix(iColorSurface, iColorPrimary, color);*/
     }
 """.trimIndent()
 

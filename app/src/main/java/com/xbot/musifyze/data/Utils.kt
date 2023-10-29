@@ -1,4 +1,4 @@
-package com.xbot.musifyze.data.player
+package com.xbot.musifyze.data
 
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.StateFlow

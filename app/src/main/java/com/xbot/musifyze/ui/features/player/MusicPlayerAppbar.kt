@@ -32,7 +32,7 @@ fun MusicPlayerAppbar(
     state: BottomSheetState,
     title: String,
     onFavorite: () -> Unit = {},
-    onPause: () -> Unit = {}
+    onPause: (Boolean) -> Unit = {}
 ) {
     Surface(
         modifier = modifier
@@ -57,7 +57,7 @@ private fun MusicPlayerAppbarContent(
     modifier: Modifier = Modifier,
     title: String,
     onFavorite: () -> Unit = {},
-    onPause: () -> Unit = {},
+    onPause: (Boolean) -> Unit = {},
 ) {
     ListItem(
         modifier = modifier.height(MusicPlayerMinHeight),
@@ -92,7 +92,7 @@ private fun MusicPlayerAppbarContent(
                 checked = state,
                 onCheckedChange = {
                     state = it
-                    onPause()
+                    onPause(it)
                 }
             ) {
                 Icon(
